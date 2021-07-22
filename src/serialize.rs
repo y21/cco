@@ -187,6 +187,22 @@ impl Serialize for Expr {
             Expr::Ident(ident) => ident.serialize(),
             Expr::Call(c) => c.serialize(),
             Expr::Literal(lit) => lit.serialize(),
+            Expr::Pos(p) => Cow::Owned(format!("+{}", p.serialize())),
+            Expr::BitNot(b) => Cow::Owned(format!("~{}", b.serialize())),
+            Expr::PrefixIncrement(p) => Cow::Owned(format!("++{}", p.serialize())),
+            Expr::PrefixDecrement(p) => Cow::Owned(format!("--{}", p.serialize())),
+            Expr::PostfixIncrement(p) => Cow::Owned(format!("{}++", p.serialize())),
+            Expr::PostfixDecrement(p) => Cow::Owned(format!("{}--", p.serialize())),
+            Expr::Index(p, i) => Cow::Owned(format!("{}[{}]", p.serialize(), i.serialize())),
+            Expr::PropertyAccess(p, m) => Cow::Owned(format!("{}.{}", p.serialize(), m.serialize())),
+            Expr::PointerDeref(p) => Cow::Owned(format!("*{}", p.serialize())),
+            Expr::AddressOf(a) => Cow::Owned(format!("&{}", a.serialize())),
+            Expr::DerefPropertyAccess(p, m) => Cow::Owned(format!("{}->{}", p.serialize(), m.serialize())),
+            Expr::Comma(lhs, rhs) => Cow::Owned(format!("{}, {}", lhs.serialize(), rhs.serialize())),
+            Expr::Conditional(c)
+                => Cow::Owned(format!("{} ? {} : {}", c.condition.serialize(), c.then.serialize(), c.else_.serialize())),
+            Expr::Sizeof(ty) => Cow::Owned(format!("sizeof({})", ty.serialize())),
+            Expr::Alignof(ty) => Cow::Owned(format!("_Alignof({})", ty.serialize())),
         }
     }
 }

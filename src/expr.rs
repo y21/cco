@@ -22,6 +22,8 @@ pub enum Expr {
     BitXor(Box<Expr>, Box<Expr>),
     /// Bitwise AND expression: lhs & rhs
     BitAnd(Box<Expr>, Box<Expr>),
+    /// Positive expression: +rhs
+    Pos(Box<Expr>),
     /// Negative expression: -rhs
     Neg(Box<Expr>),
     /// Not expression: !rhs
@@ -64,6 +66,8 @@ pub enum Expr {
     BitXorAssign(Box<Expr>, Box<Expr>),
     /// Bitwise AND assignment expression: lhs &= rhs
     BitAndAssign(Box<Expr>, Box<Expr>),
+    /// Bitwise NOT expression: ~lhs
+    BitNot(Box<Expr>),
     /// Identifier expression: `foo` (used to refer to a type or variable)
     Ident(Box<str>),
     /// Function call expression: `foo(p1, p2, ..., pN)`
@@ -72,8 +76,33 @@ pub enum Expr {
     Cast(Type, Box<Expr>),
     /// Literal value expression: `42`
     Literal(Literal),
+    /// Prefix increment expression: ++rhs
+    PrefixIncrement(Box<Expr>),
+    /// Prefix decrement expression: --rhs
+    PrefixDecrement(Box<Expr>),
+    /// Postfix increment expression: lhs++
+    PostfixIncrement(Box<Expr>),
+    /// Postfix decrement expression: lhs--
+    PostfixDecrement(Box<Expr>),
+    /// Index expression: lhs[rhs]
+    Index(Box<Expr>, Box<Expr>),
+    /// Property access expression: lhs.rhs
+    PropertyAccess(Box<Expr>, Box<str>),
+    /// Pointer deref expression: *lhs
+    PointerDeref(Box<Expr>),
+    /// Address-of expression: &lhs
+    AddressOf(Box<Expr>),
+    /// Deref property access expression: lhs->rhs
+    DerefPropertyAccess(Box<Expr>, Box<str>),
+    /// The comma expression: lhs, rhs
+    Comma(Box<Expr>, Box<Expr>),
+    /// Conditional/ternary expression: cond ? then : else
+    Conditional(Conditional),
+    /// sizeof expression: sizeof(T)
+    Sizeof(Box<Expr>),
+    /// Alignof expression: _Alignof(T)
+    Alignof(Box<Expr>),
 }
-// TODO: pointerof expression
 
 /// A literal value
 pub enum Literal {
@@ -103,6 +132,16 @@ pub enum Literal {
     Char(i8),
     /// C string
     String(Box<str>),
+}
+
+/// A conditional expression
+pub struct Conditional {
+    /// The condition of a conditional expression
+    pub condition: Box<Expr>,
+    /// The then expression of a conditional expression
+    pub then: Box<Expr>,
+    /// The else expression of a conditional expression
+    pub else_: Box<Expr>,
 }
 
 /// A function call expression
