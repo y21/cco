@@ -1,8 +1,9 @@
 use std::borrow::Cow;
 
 use crate::{
-    Expr, FunctionCall, FunctionDeclaration, IfBranch, IfStatement, Literal, Node, ParameterList,
-    Statement, SwitchCase, SwitchStatement, Type, VariableStatement,
+    DoWhileStatement, Expr, ForStatement, FunctionCall, FunctionDeclaration, IfBranch, IfStatement,
+    Literal, Node, ParameterList, Statement, SwitchCase, SwitchStatement, Type, VariableStatement,
+    WhileStatement,
 };
 
 type CowString = Cow<'static, str>;
@@ -70,11 +71,68 @@ impl Serialize for Statement {
             Statement::FunctionDeclaration(f) => f.serialize(),
             Statement::Expression(e) => e.serialize(),
             Statement::Return(r) => Cow::Owned(format!("return {}", r.serialize())),
+            Statement::For(f) => f.serialize(),
+            Statement::While(w) => w.serialize(),
+            Statement::DoWhile(d) => d.serialize(),
+            Statement::Break => Cow::Borrowed("break"),
+            Statement::Continue => Cow::Borrowed("continue"),
         }
         .to_string();
 
         e.push(';');
         Cow::Owned(e)
+    }
+}
+
+impl Serialize for WhileStatement {
+    fn serialize(&self) -> CowString {
+        let mut s = format!("while ({}) ", self.condition.serialize());
+        if let Some(body) = &self.body {
+            s.push_str(&body.serialize());
+        }
+        Cow::Owned(s)
+    }
+}
+
+impl Serialize for DoWhileStatement {
+    fn serialize(&self) -> CowString {
+        Cow::Owned(format!(
+            "do {} while ({});",
+            self.body.serialize(),
+            self.condition.serialize()
+        ))
+    }
+}
+
+impl Serialize for ForStatement {
+    fn serialize(&self) -> CowString {
+        let mut s = String::from("for (");
+
+        if let Some(init) = &self.init {
+            s.push_str(&init.serialize());
+        }
+
+        s.push_str("; ");
+
+        if let Some(cond) = &self.cond {
+            s.push_str(&cond.serialize());
+        }
+
+        s.push_str("; ");
+
+        if let Some(finalizer) = &self.finalizer {
+            s.push_str(&finalizer.serialize());
+        }
+
+        s.push_str(") ");
+
+        if let Some(body) = &self.body {
+            s.push_str(&body.serialize());
+        } else {
+            s.push(';');
+        }
+
+        Cow::Owned(s)
     }
 }
 

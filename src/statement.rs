@@ -21,6 +21,58 @@ pub enum Statement {
     Expression(Expr),
     /// A return statement
     Return(Expr),
+    /// A for statement
+    For(ForStatement),
+    /// A while statement
+    While(WhileStatement),
+    /// A do-while statement
+    DoWhile(DoWhileStatement),
+    /// A continue statement
+    Continue,
+    /// A break statement
+    Break,
+}
+
+/// A do-while loop
+///
+/// This is nearly the same as a while loop, with the difference that the condition
+/// is checked after the body is executed.
+/// Meaning that it is always evaluated at least once.
+pub struct DoWhileStatement {
+    /// The body of the loop
+    pub body: Box<Statement>,
+    /// The condition of the loop
+    pub condition: Expr,
+}
+
+/// A C while loop
+pub struct WhileStatement {
+    /// The condition of a while loop
+    pub condition: Expr,
+    /// The body of a while loop, if present
+    pub body: Option<Box<Statement>>,
+}
+
+/// A C for statement
+///
+/// All of the fields are optional.
+/// In the case of an empty body, a single semicolon is generated.
+pub struct ForStatement {
+    /// The initial clause
+    ///
+    /// It is evaluated once, usually used to initialize a variable
+    pub init: Option<Box<Statement>>,
+    /// The condition clause
+    ///
+    /// It is evaluated at each iteration, usually used to check a condition
+    /// When the expression is false, the loop is exited
+    pub cond: Option<Expr>,
+    /// The post clause
+    ///
+    /// It is evaluated at the end of each iteration, usually used to update a variable
+    pub finalizer: Option<Expr>,
+    /// The body of the loop
+    pub body: Option<Box<Statement>>,
 }
 
 /// Builtin C types
