@@ -1,0 +1,292 @@
+use std::borrow::Cow;
+
+use crate::{
+    Expr, FunctionCall, FunctionDeclaration, IfBranch, IfStatement, Literal, Node, ParameterList,
+    Statement, SwitchCase, SwitchStatement, Type, VariableStatement,
+};
+
+type CowString = Cow<'static, str>;
+
+pub trait Serialize {
+    fn serialize(&self) -> CowString;
+}
+
+impl Serialize for Box<str> {
+    fn serialize(&self) -> CowString {
+        Cow::Owned(self.to_string())
+    }
+}
+
+impl Serialize for Type {
+    fn serialize(&self) -> CowString {
+        match self {
+            Type::Void => Cow::Borrowed("void"),
+            Type::SignedChar => Cow::Borrowed("char"),
+            Type::SignedShort => Cow::Borrowed("short"),
+            Type::SignedInt => Cow::Borrowed("int"),
+            Type::SignedLong => Cow::Borrowed("long"),
+            Type::SignedLongLong => Cow::Borrowed("long long"),
+            Type::SignedInt128 => Cow::Borrowed("__int128"),
+            Type::Bool => Cow::Borrowed("_Bool"),
+            Type::UnsignedChar => Cow::Borrowed("unsigned char"),
+            Type::UnsignedShort => Cow::Borrowed("unsigned short"),
+            Type::UnsignedInt => Cow::Borrowed("unsigned int"),
+            Type::UnsignedLong => Cow::Borrowed("unsigned long"),
+            Type::UnsignedLongLong => Cow::Borrowed("unsigned long long"),
+            Type::UnsignedInt128 => Cow::Borrowed("__uint128"),
+            Type::Float => Cow::Borrowed("float"),
+            Type::Double => Cow::Borrowed("double"),
+            Type::LongDouble => Cow::Borrowed("long double"),
+            Type::FloatComplex => Cow::Borrowed("float _Complex"),
+            Type::DoubleComplex => Cow::Borrowed("double _Complex"),
+            Type::LongDoubleComplex => Cow::Borrowed("long double _Complex"),
+            Type::FloatImaginary => Cow::Borrowed("float _Imaginary"),
+            Type::DoubleImaginary => Cow::Borrowed("double _Imaginary"),
+            Type::LongDoubleImaginary => Cow::Borrowed("long double _Imaginary"),
+            Type::Array(ty, len) => Cow::Owned(format!(
+                "{}[{}]",
+                ty.serialize(),
+                len.map(|x| x.to_string()).unwrap_or_else(String::new)
+            )),
+            Type::Pointer(ty) => Cow::Owned(format!("{}*", ty.serialize())),
+            Type::Identifier(ty) => ty.serialize(),
+            Type::Atomic(ty) => Cow::Owned(format!("_Atomic({})", ty.serialize())),
+        }
+    }
+}
+
+impl Serialize for Statement {
+    fn serialize(&self) -> CowString {
+        let mut e = match self {
+            Statement::If(i) => i.serialize(),
+            Statement::Switch(s) => s.serialize(),
+            Statement::Block(b) => b.serialize(),
+            Statement::VariableDeclaration(v) => v.serialize(),
+            Statement::FunctionDeclaration(f) => f.serialize(),
+            Statement::Expression(e) => e.serialize(),
+            Statement::Return(r) => Cow::Owned(format!("return {}", r.serialize())),
+        }
+        .to_string();
+
+        e.push(';');
+        Cow::Owned(e)
+    }
+}
+
+impl Serialize for Vec<Statement> {
+    fn serialize(&self) -> CowString {
+        Cow::Owned(
+            self.iter()
+                .map(Serialize::serialize)
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()
+                .join("\n"),
+        )
+    }
+}
+
+impl Serialize for Expr {
+    #[rustfmt::skip]
+    fn serialize(&self) -> CowString {
+        match self {
+            Expr::Add(lhs, rhs) => Cow::Owned(format!("{} + {}", lhs.serialize(), rhs.serialize())),
+            Expr::Sub(lhs, rhs) => Cow::Owned(format!("{} - {}", lhs.serialize(), rhs.serialize())),
+            Expr::Mul(lhs, rhs) => Cow::Owned(format!("{} * {}", lhs.serialize(), rhs.serialize())),
+            Expr::Div(lhs, rhs) => Cow::Owned(format!("{} / {}", lhs.serialize(), rhs.serialize())),
+            Expr::Mod(lhs, rhs) => Cow::Owned(format!("{} % {}", lhs.serialize(), rhs.serialize())),
+            Expr::LShift(lhs, rhs) => Cow::Owned(format!("{} << {}", lhs.serialize(), rhs.serialize())),
+            Expr::RShift(lhs, rhs) => Cow::Owned(format!("{} >> {}", lhs.serialize(), rhs.serialize())),
+            Expr::BitOr(lhs, rhs) => Cow::Owned(format!("{} | {}", lhs.serialize(), rhs.serialize())),
+            Expr::BitXor(lhs, rhs) => Cow::Owned(format!("{} ^ {}", lhs.serialize(), rhs.serialize())),
+            Expr::BitAnd(lhs, rhs) => Cow::Owned(format!("{} & {}", lhs.serialize(), rhs.serialize())),
+            Expr::Neg(rhs) => Cow::Owned(format!("-{}", rhs.serialize())),
+            Expr::Not(rhs) => Cow::Owned(format!("!{}", rhs.serialize())),
+            Expr::Cast(t, rhs) => Cow::Owned(format!("({}){}", t.serialize(), rhs.serialize())),
+            Expr::Eq(lhs, rhs) => Cow::Owned(format!("{} == {}", lhs.serialize(), rhs.serialize())),
+            Expr::Ne(lhs, rhs) => Cow::Owned(format!("{} != {}", lhs.serialize(), rhs.serialize())),
+            Expr::Lt(lhs, rhs) => Cow::Owned(format!("{} < {}", lhs.serialize(), rhs.serialize())),
+            Expr::Gt(lhs, rhs) => Cow::Owned(format!("{} > {}", lhs.serialize(), rhs.serialize())),
+            Expr::Le(lhs, rhs) => Cow::Owned(format!("{} <= {}", lhs.serialize(), rhs.serialize())),
+            Expr::Ge(lhs, rhs) => Cow::Owned(format!("{} >= {}", lhs.serialize(), rhs.serialize())),
+            Expr::And(lhs, rhs) => Cow::Owned(format!("{} && {}", lhs.serialize(), rhs.serialize())),
+            Expr::Or(lhs, rhs) => Cow::Owned(format!("{} || {}", lhs.serialize(), rhs.serialize())),
+            Expr::Assign(lhs, rhs) => Cow::Owned(format!("{} = {}", lhs.serialize(), rhs.serialize())),
+            Expr::AddAssign(lhs, rhs) => Cow::Owned(format!("{} += {}", lhs.serialize(), rhs.serialize())),
+            Expr::SubAssign(lhs, rhs) => Cow::Owned(format!("{} -= {}", lhs.serialize(), rhs.serialize())),
+            Expr::MulAssign(lhs, rhs) => Cow::Owned(format!("{} *= {}", lhs.serialize(), rhs.serialize())),
+            Expr::DivAssign(lhs, rhs) => Cow::Owned(format!("{} /= {}", lhs.serialize(), rhs.serialize())),
+            Expr::ModAssign(lhs, rhs) => Cow::Owned(format!("{} %= {}", lhs.serialize(), rhs.serialize())),
+            Expr::LShiftAssign(lhs, rhs) => Cow::Owned(format!("{} <<= {}", lhs.serialize(), rhs.serialize())),
+            Expr::RShiftAssign(lhs, rhs) => Cow::Owned(format!("{} >>= {}", lhs.serialize(), rhs.serialize())),
+            Expr::BitOrAssign(lhs, rhs) => Cow::Owned(format!("{} |= {}", lhs.serialize(), rhs.serialize())),
+            Expr::BitXorAssign(lhs, rhs) => Cow::Owned(format!("{} ^= {}", lhs.serialize(), rhs.serialize())),
+            Expr::BitAndAssign(lhs, rhs) => Cow::Owned(format!("{} &= {}", lhs.serialize(), rhs.serialize())),
+            Expr::Ident(ident) => ident.serialize(),
+            Expr::Call(c) => c.serialize(),
+            Expr::Literal(lit) => lit.serialize(),
+        }
+    }
+}
+
+impl Serialize for Literal {
+    fn serialize(&self) -> CowString {
+        match self {
+            Literal::Int8(i) => Cow::Owned(i.to_string()),
+            Literal::Int16(i) => Cow::Owned(i.to_string()),
+            Literal::Int32(i) => Cow::Owned(i.to_string()),
+            Literal::Int64(i) => Cow::Owned(i.to_string()),
+            Literal::Uint8(i) => Cow::Owned(i.to_string()),
+            Literal::Uint16(i) => Cow::Owned(i.to_string()),
+            Literal::Uint32(i) => Cow::Owned(i.to_string()),
+            Literal::Uint64(i) => Cow::Owned(i.to_string()),
+            Literal::Float(f) => Cow::Owned(f.to_string()),
+            Literal::Double(f) => Cow::Owned(f.to_string()),
+            Literal::Char(c) => Cow::Owned(c.to_string()),
+            Literal::String(s) => Cow::Owned(format!("{:?}", s)),
+            Literal::Bool(b) => Cow::Owned(b.to_string()),
+        }
+    }
+}
+
+impl Serialize for FunctionCall {
+    fn serialize(&self) -> CowString {
+        let mut s = format!("{}(", self.callee.serialize());
+
+        for (index, arg) in self.args.iter().enumerate() {
+            if index != 0 {
+                s.push(',');
+            }
+
+            s.push_str(&arg.serialize());
+        }
+
+        s.push(')');
+
+        Cow::Owned(s)
+    }
+}
+
+impl Serialize for IfStatement {
+    fn serialize(&self) -> CowString {
+        let mut s = String::from("if (");
+
+        // Condition
+        s.push_str(&self.condition.serialize());
+        s.push_str(") ");
+
+        // Then
+        s.push_str(&self.then.serialize());
+
+        // Else
+        for branch in &self.else_ {
+            s.push_str(&branch.serialize());
+        }
+
+        Cow::Owned(s)
+    }
+}
+
+impl Serialize for IfBranch {
+    fn serialize(&self) -> CowString {
+        let e: &dyn Serialize = match self {
+            IfBranch::ElseIf(s) => s,
+            IfBranch::Else(s) => s,
+        };
+
+        Cow::Owned(format!("else {}", e.serialize()))
+    }
+}
+
+impl Serialize for SwitchStatement {
+    fn serialize(&self) -> CowString {
+        let mut s = String::from("switch (");
+
+        // Condition
+        s.push_str(&self.condition.serialize());
+        s.push_str(") {");
+
+        // Cases
+        for case in &self.cases {
+            s.push_str(&case.serialize());
+        }
+
+        // Default
+        if let Some(default) = &self.default {
+            s.push_str(&default.serialize());
+        }
+
+        s.push('}');
+
+        Cow::Owned(s)
+    }
+}
+
+impl Serialize for SwitchCase {
+    fn serialize(&self) -> CowString {
+        let cond = self.condition.serialize();
+        let body = self.body.serialize();
+        Cow::Owned(format!("case {}: {{ {} }}", cond, body))
+    }
+}
+
+impl Serialize for VariableStatement {
+    fn serialize(&self) -> CowString {
+        let mut s = String::from(self.ty.serialize());
+
+        s.push(' ');
+
+        s.push_str(&self.ident.serialize());
+
+        if let Some(value) = &self.value {
+            s.push('=');
+            s.push_str(&value.serialize());
+        }
+
+        s.push(';');
+
+        Cow::Owned(s)
+    }
+}
+
+impl Serialize for FunctionDeclaration {
+    fn serialize(&self) -> CowString {
+        let mut s = String::from(self.ret.serialize());
+
+        s.push(' ');
+
+        s.push_str(&self.ident.serialize());
+
+        s.push('(');
+
+        s.push_str(&self.args.serialize());
+
+        s.push_str(") {");
+
+        s.push_str(&self.body.serialize());
+
+        s.push('}');
+
+        Cow::Owned(s)
+    }
+}
+
+impl Serialize for ParameterList {
+    fn serialize(&self) -> CowString {
+        Cow::Owned(
+            self.iter()
+                .map(|(ident, ty)| format!("{} {}", ty.serialize(), ident.serialize()))
+                .collect::<Vec<String>>()
+                .join(", "),
+        )
+    }
+}
+
+impl Serialize for Node {
+    fn serialize(&self) -> CowString {
+        match self {
+            Node::SinglelineComment(txt) => Cow::Owned(format!("// {}", txt)),
+            Node::MultilineComment(txt) => Cow::Owned(format!("/* {} */", txt)),
+            Node::Statement(stmt) => stmt.serialize(),
+        }
+    }
+}
