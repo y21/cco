@@ -60,7 +60,12 @@ impl Serialize for Statement {
         let mut e = match self {
             Statement::If(i) => i.serialize(),
             Statement::Switch(s) => s.serialize(),
-            Statement::Block(b) => b.serialize(),
+            Statement::Block(b) => {
+                let mut s = String::from("{\n");
+                s.push_str(&b.serialize());
+                s.push_str("\n}");
+                Cow::Owned(s)
+            }
             Statement::VariableDeclaration(v) => v.serialize(),
             Statement::FunctionDeclaration(f) => f.serialize(),
             Statement::Expression(e) => e.serialize(),
@@ -176,11 +181,17 @@ impl Serialize for IfStatement {
 
         // Then
         s.push_str(&self.then.serialize());
+        s.push('\n');
 
         // Else
-        for branch in &self.else_ {
+        for (index, branch) in self.else_.iter().enumerate() {
+            if index != 0 {
+                s.push('\n');
+            }
             s.push_str(&branch.serialize());
         }
+
+        s.push('}');
 
         Cow::Owned(s)
     }
@@ -203,15 +214,19 @@ impl Serialize for SwitchStatement {
 
         // Condition
         s.push_str(&self.condition.serialize());
-        s.push_str(") {");
+        s.push_str(") {\n");
 
         // Cases
-        for case in &self.cases {
+        for (index, case) in self.cases.iter().enumerate() {
+            if index != 0 {
+                s.push('\n');
+            }
             s.push_str(&case.serialize());
         }
 
         // Default
         if let Some(default) = &self.default {
+            s.push('\n');
             s.push_str(&default.serialize());
         }
 
@@ -260,11 +275,11 @@ impl Serialize for FunctionDeclaration {
 
         s.push_str(&self.args.serialize());
 
-        s.push_str(") {");
+        s.push_str(") {\n");
 
         s.push_str(&self.body.serialize());
 
-        s.push('}');
+        s.push_str("\n}");
 
         Cow::Owned(s)
     }
