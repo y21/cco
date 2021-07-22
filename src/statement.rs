@@ -3,7 +3,7 @@ use crate::Expr;
 /// An owned identifier
 pub type OwnedIdentifier = Box<str>;
 /// A list of parameters
-pub type ParameterList = Vec<(OwnedIdentifier, Type)>;
+pub type ParameterList = Vec<(Type, OwnedIdentifier)>;
 
 /// A C statement
 pub enum Statement {
@@ -31,7 +31,27 @@ pub enum Statement {
     Continue,
     /// A break statement
     Break,
+    /// A struct declaration statement
+    Struct(StructDeclaration),
+    /// An union declaration statement
+    Union(UnionDeclaration),
+    /// A typedef statement
+    Typedef(TypedefStatement),
 }
+
+/// A typedef statement
+pub struct TypedefStatement {
+    /// Target type
+    pub target: Box<Statement>,
+    /// New type
+    pub new: OwnedIdentifier,
+}
+
+/// An union declaration
+pub struct UnionDeclaration(pub ParameterList);
+
+/// A struct declaration
+pub struct StructDeclaration(pub ParameterList);
 
 /// A do-while loop
 ///

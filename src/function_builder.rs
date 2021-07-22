@@ -45,7 +45,7 @@ impl FunctionBuilder {
     where
         S: Into<Box<str>>,
     {
-        self.args.push((ident.into(), ty));
+        self.args.push((ty, ident.into()));
         self
     }
 

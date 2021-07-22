@@ -1,6 +1,9 @@
+use std::collections::btree_set::Union;
+
 use crate::{
-    Expr, FunctionCall, FunctionDeclaration, IfStatement, Statement, SwitchStatement,
-    VariableStatement,
+    DoWhileStatement, Expr, ForStatement, FunctionCall, FunctionDeclaration, IfStatement,
+    Statement, StructDeclaration, SwitchStatement, TypedefStatement, UnionDeclaration,
+    VariableStatement, WhileStatement,
 };
 
 impl From<IfStatement> for Statement {
@@ -42,5 +45,41 @@ impl From<Expr> for Statement {
 impl From<FunctionCall> for Statement {
     fn from(f: FunctionCall) -> Self {
         Expr::Call(f).into()
+    }
+}
+
+impl From<ForStatement> for Statement {
+    fn from(f: ForStatement) -> Self {
+        Self::For(f)
+    }
+}
+
+impl From<WhileStatement> for Statement {
+    fn from(w: WhileStatement) -> Self {
+        Self::While(w)
+    }
+}
+
+impl From<DoWhileStatement> for Statement {
+    fn from(d: DoWhileStatement) -> Self {
+        Self::DoWhile(d)
+    }
+}
+
+impl From<StructDeclaration> for Statement {
+    fn from(s: StructDeclaration) -> Self {
+        Self::Struct(s)
+    }
+}
+
+impl From<UnionDeclaration> for Statement {
+    fn from(u: UnionDeclaration) -> Self {
+        Self::Union(u)
+    }
+}
+
+impl From<TypedefStatement> for Statement {
+    fn from(t: TypedefStatement) -> Self {
+        Self::Typedef(t)
     }
 }

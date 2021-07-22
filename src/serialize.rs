@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use crate::{
     DoWhileStatement, Expr, ForStatement, FunctionCall, FunctionDeclaration, IfBranch, IfStatement,
-    Literal, Node, ParameterList, Statement, SwitchCase, SwitchStatement, Type, VariableStatement,
-    WhileStatement,
+    Literal, Node, ParameterList, Statement, StructDeclaration, SwitchCase, SwitchStatement, Type,
+    TypedefStatement, UnionDeclaration, VariableStatement, WhileStatement,
 };
 
 type CowString = Cow<'static, str>;
@@ -76,11 +76,49 @@ impl Serialize for Statement {
             Statement::DoWhile(d) => d.serialize(),
             Statement::Break => Cow::Borrowed("break"),
             Statement::Continue => Cow::Borrowed("continue"),
+            Statement::Struct(s) => s.serialize(),
+            Statement::Union(u) => u.serialize(),
+            Statement::Typedef(t) => t.serialize(),
         }
         .to_string();
 
         e.push(';');
         Cow::Owned(e)
+    }
+}
+
+impl Serialize for TypedefStatement {
+    fn serialize(&self) -> CowString {
+        Cow::Owned(format!(
+            "typedef {} {}",
+            self.target.serialize(),
+            self.new.serialize()
+        ))
+    }
+}
+
+fn serialize_fields(fields: &[(Type, Box<str>)]) -> String {
+    let mut s = String::new();
+    for (index, (ty, ident)) in fields.iter().enumerate() {
+        if index != 0 {
+            s.push_str(",\n");
+        }
+        s.push_str(&ty.serialize());
+        s.push(' ');
+        s.push_str(&ident.serialize());
+    }
+    s
+}
+
+impl Serialize for StructDeclaration {
+    fn serialize(&self) -> CowString {
+        Cow::Owned(format!("struct {{\n{}\n}}", serialize_fields(&self.0)))
+    }
+}
+
+impl Serialize for UnionDeclaration {
+    fn serialize(&self) -> CowString {
+        Cow::Owned(format!("union {{\n{}\n}}", serialize_fields(&self.0)))
     }
 }
 
